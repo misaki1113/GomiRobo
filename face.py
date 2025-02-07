@@ -1,43 +1,26 @@
 import cv2
 
-def detect_faces():
-    # カスケード分類器のファイルパス
-    cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
-    face_cascade = cv2.CascadeClassifier(cascade_path)
-
-    # カメラキャプチャを開始
+def get_face_position():
     cap = cv2.VideoCapture(0)
+    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
     while True:
-        # フレームをキャプチャ
         ret, frame = cap.read()
         if not ret:
-            print("Failed to grab frame")
             break
 
-        # グレースケールに変換
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-        # 顔を検出
         faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=8, minSize=(50, 50))
 
-        print(faces)
+        face_x, face_y = None, None
+        if len(faces) > 0:
+            x, y, w, h = faces[0]  # 最初の顔の座標を取得
+            face_x = x + w // 2  # 顔の中心のX座標
+            face_y = y + h // 2  # 顔の中心のY座標
 
-        
-        # 検出した顔に四角を描画
-        for (x, y, w, h) in faces:
-            cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 0), 2)
+        yield face_x, face_y, frame.shape[1], frame.shape[0]  # 顔のX/Y座標と画面幅/高さを返す
 
-        # フレームを表示
-        cv2.imshow('Face Detection', frame)
-
-        # 'q'キーで終了
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
-    # リリースとウィンドウの破棄
     cap.release()
-    cv2.destroyAllWindows()
-
-if __name__ == "__main__":
-    detect_faces()
