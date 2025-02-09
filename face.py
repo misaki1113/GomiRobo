@@ -1,43 +1,31 @@
 import cv2
+import mediapipe as mp
 
-def detect_faces():
-    # カスケード分類器のファイルパス
-    cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
-    face_cascade = cv2.CascadeClassifier(cascade_path)
+mp_face_detection = mp.solutions.face_detection
+face_detector = mp_face_detection.FaceDetection(min_detection_confidence=0.6)
 
-    # カメラキャプチャを開始
+def get_face_position():
     cap = cv2.VideoCapture(0)
 
     while True:
-        # フレームをキャプチャ
         ret, frame = cap.read()
         if not ret:
-            print("Failed to grab frame")
             break
 
-        # グレースケールに変換
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        results = face_detector.process(rgb_frame)
 
-        # 顔を検出
-        faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=8, minSize=(50, 50))
+        face_x, face_y = None, None
+        if results.detections:
+            detection = results.detections[0]  # 最初の顔のみ取得
+            bbox = detection.location_data.relative_bounding_box
 
-        print(faces)
+            face_x = int((bbox.xmin + bbox.width / 2) * frame.shape[1])
+            face_y = int((bbox.ymin + bbox.height / 2) * frame.shape[0])
 
-        
-        # 検出した顔に四角を描画
-        for (x, y, w, h) in faces:
-            cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 0), 2)
+        yield face_x, face_y, frame.shape[1], frame.shape[0]
 
-        # フレームを表示
-        cv2.imshow('Face Detection', frame)
-
-        # 'q'キーで終了
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
-    # リリースとウィンドウの破棄
     cap.release()
-    cv2.destroyAllWindows()
-
-if __name__ == "__main__":
-    detect_faces()
