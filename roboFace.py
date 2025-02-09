@@ -5,7 +5,7 @@ import random
 from face import get_face_position
 
 # 画面設定
-WIDTH, HEIGHT = 400, 200
+WIDTH, HEIGHT = 800, 480
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
@@ -13,11 +13,11 @@ clock = pygame.time.Clock()
 # 目の基本位置
 eye_left_x = WIDTH // 3
 eye_right_x = WIDTH * 2 // 3
-eye_y = HEIGHT // 2
+eye_y = (HEIGHT // 2) - (HEIGHT // 4)
 
 # 目のサイズ設定
-EYE_RADIUS = 30  # 白目の半径
-IRIS_RADIUS = 10  # 黒目の半径
+EYE_RADIUS = 60  # 白目の半径
+IRIS_RADIUS = 40  # 黒目の半径
 MAX_IRIS_MOVEMENT = EYE_RADIUS - IRIS_RADIUS  # 黒目の可動範囲
 
 # 黒目の初期位置
@@ -30,24 +30,69 @@ iris_right_y = eye_y
 blink_level = 0  # 0: 開いてる, 10: 閉じてる
 blinking = False
 
+# くちばしの開閉レベル
+beak_open_level = 0  
+
 def draw_eyes(left_eye_pos, right_eye_pos, left_iris_pos, right_iris_pos, blink):
-    screen.fill((255, 255, 255))  # 背景を白に
+    screen.fill((233, 244, 252))  # 背景を白に
 
     # 左目（白目）
-    pygame.draw.circle(screen, (0, 0, 0), left_eye_pos, EYE_RADIUS, 3)
+    pygame.draw.circle(screen, (113, 98, 70), left_eye_pos, EYE_RADIUS, 3)
     # 右目（白目）
-    pygame.draw.circle(screen, (0, 0, 0), right_eye_pos, EYE_RADIUS, 3)
+    pygame.draw.circle(screen, (113, 98, 70), right_eye_pos, EYE_RADIUS, 3)
 
     # 左目（黒目）
-    pygame.draw.circle(screen, (0, 0, 0), left_iris_pos, IRIS_RADIUS)
+    pygame.draw.circle(screen, (71, 75, 66), left_iris_pos, IRIS_RADIUS,38)
     # 右目（黒目）
-    pygame.draw.circle(screen, (0, 0, 0), right_iris_pos, IRIS_RADIUS)
+    pygame.draw.circle(screen, (71, 75, 66), right_iris_pos, IRIS_RADIUS,38)
 
-    # 瞬き（上から矩形で隠す）
+    # 瞬き（まぶた）
     if blink > 0:
-        blink_height = int((blink / 10) * (EYE_RADIUS * 2))  # 閉じる割合
-        pygame.draw.rect(screen, (255, 255, 255), (left_eye_pos[0] - EYE_RADIUS, left_eye_pos[1] - EYE_RADIUS, EYE_RADIUS * 2, blink_height))
-        pygame.draw.rect(screen, (255, 255, 255), (right_eye_pos[0] - EYE_RADIUS, right_eye_pos[1] - EYE_RADIUS, EYE_RADIUS * 2, blink_height))
+        blink_height = int((blink / 10) * (EYE_RADIUS * 2))  # 瞬きの割合
+        eyelid_color = (233, 244, 252)  # まぶたの色
+        eyelash_color = (180, 190, 200)  # まつげ（下の辺）の色
+
+        # 上からまぶたを覆う
+        pygame.draw.rect(screen, eyelid_color, 
+                         (left_eye_pos[0] - EYE_RADIUS, left_eye_pos[1] - EYE_RADIUS, EYE_RADIUS * 2, blink_height))
+        pygame.draw.rect(screen, eyelid_color, 
+                         (right_eye_pos[0] - EYE_RADIUS, right_eye_pos[1] - EYE_RADIUS, EYE_RADIUS * 2, blink_height))
+
+        # 下の辺にまつげのラインを描く
+        pygame.draw.line(screen, eyelash_color, 
+                         (left_eye_pos[0] - EYE_RADIUS, left_eye_pos[1] - EYE_RADIUS + blink_height),
+                         (left_eye_pos[0] + EYE_RADIUS, left_eye_pos[1] - EYE_RADIUS + blink_height), 3)
+        pygame.draw.line(screen, eyelash_color, 
+                         (right_eye_pos[0] - EYE_RADIUS, right_eye_pos[1] - EYE_RADIUS + blink_height),
+                         (right_eye_pos[0] + EYE_RADIUS, right_eye_pos[1] - EYE_RADIUS + blink_height), 3)
+    
+def draw_penguin_mouth(center_x, center_y, open_level):
+    """ ペンギンのくちばしを描画する（口を開くときに上と下の三角形を離す） """
+    beak_color = (248, 184, 98)  # オレンジ色
+    beak_outline = (253, 222, 165)  # 輪郭色
+
+    # くちばしの移動量
+    beak_movement = open_level * 2  # 口の開きに応じた移動量
+
+    # 上のくちばし（上へ移動）
+    top_beak = [
+        (center_x - 110, center_y - beak_movement), 
+        (center_x + 110, center_y - beak_movement), 
+        (center_x, center_y - 40 - beak_movement)
+    ]
+    pygame.draw.polygon(screen, beak_color, top_beak)
+    pygame.draw.polygon(screen, beak_outline, top_beak, 2)
+
+    # 下のくちばし（下へ移動）
+    bottom_beak = [
+        (center_x - 110, center_y + beak_movement), 
+        (center_x + 110, center_y + beak_movement), 
+        (center_x, center_y + 40 + beak_movement)
+    ]
+    pygame.draw.polygon(screen, beak_color, bottom_beak)
+    pygame.draw.polygon(screen, beak_outline, bottom_beak, 2)
+
+
 
 # カメラ処理をスレッドで実行
 def update_eye_position():
@@ -84,9 +129,52 @@ def blink_animation():
             time.sleep(0.05)
         blinking = False
 
+# くちばしの開閉
+def beak_animation():
+    global beak_open_level
+    while True:
+        time.sleep(random.uniform(2, 5))  # 2〜5秒ごとに開閉
+        for i in range(1, 5):  # 開く
+            beak_open_level = i
+            time.sleep(0.05)
+        for i in range(4, -1, -1):  # 閉じる
+            beak_open_level = i
+            time.sleep(0.05)
+
+
+def draw_bowtie(center_x, center_y):
+    """ 蝶ネクタイを描画する """
+    bowtie_color = (240, 144, 141)  # 赤色
+    outline_color = (240, 145, 153)  # 濃い赤（輪郭）
+
+    # 左の三角形
+    left_bowtie = [
+        (center_x - 20, center_y),
+        (center_x - 150, center_y - 50),
+        (center_x - 150, center_y + 50)
+    ]
+    pygame.draw.polygon(screen, bowtie_color, left_bowtie)
+    pygame.draw.polygon(screen, outline_color, left_bowtie, 2)
+
+    # 右の三角形
+    right_bowtie = [
+        (center_x + 20, center_y),
+        (center_x + 150, center_y - 50),
+        (center_x + 150, center_y + 50)
+    ]
+    pygame.draw.polygon(screen, bowtie_color, right_bowtie)
+    pygame.draw.polygon(screen, outline_color, right_bowtie, 2)
+
+    # 真ん中の円（結び目）
+    pygame.draw.circle(screen, outline_color, (center_x, center_y), 20)
+    pygame.draw.circle(screen, bowtie_color, (center_x, center_y), 20)
+
+
+
 # スレッド開始
 threading.Thread(target=update_eye_position, daemon=True).start()
 threading.Thread(target=blink_animation, daemon=True).start()
+threading.Thread(target=beak_animation, daemon=True).start()
 
 # pygame メインループ
 running = True
@@ -102,6 +190,9 @@ while running:
         (iris_right_x, iris_right_y), 
         blink_level
     )
+
+    draw_penguin_mouth(WIDTH // 2, HEIGHT // 2 + 5, beak_open_level)
+    draw_bowtie(WIDTH // 2, HEIGHT // 2 + 140)  # 口の下に蝶ネクタイを描画
 
     pygame.display.flip()
     clock.tick(30)
