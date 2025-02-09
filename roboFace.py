@@ -144,8 +144,17 @@ def beak_animation():
 
 def draw_bowtie(center_x, center_y):
     """ 蝶ネクタイを描画する """
-    bowtie_color = (240, 144, 141)  # 赤色
-    outline_color = (240, 145, 153)  # 濃い赤（輪郭）
+    # #赤色
+    # bowtie_color = (240, 144, 141)
+    # outline_color = (240, 145, 153)
+
+    # #青色
+    # bowtie_color = (44, 169, 225)  
+    # outline_color = (137, 195, 235)
+
+    #黄色
+    bowtie_color = (255, 236, 71)  
+    outline_color = (245, 229, 107)
 
     # 左の三角形
     left_bowtie = [
